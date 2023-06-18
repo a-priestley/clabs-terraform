@@ -4,7 +4,7 @@ terraform {
 }
 
 module "oracle_cloud" {
-  source               = "./oracle_cloud"
+  source               = "./modules/oracle_cloud"
   oci_user_ocid        = var.oci_user_ocid
   oci_private_key_path = var.oci_private_key_path
   oci_fingerprint      = var.oci_fingerprint
@@ -13,14 +13,13 @@ module "oracle_cloud" {
 }
 
 module "cloudflare" {
-  source             = "./cloudflare"
-  cloudflare_email   = var.cloudflare_email
-  cloudflare_api_key = var.cloudflare_api_key
+  source               = "./modules/cloudflare"
+  cloudflare_api_token = var.cloudflare_api_token
 }
 
-module "proxmox" {
-  source           = "./proxmox"
-  proxmox_url      = var.proxmox_url
-  proxmox_user     = var.proxmox_user
-  proxmox_password = var.proxmox_password
-}
+#module "proxmox" {
+#  source           = "./modules/proxmox"
+#  proxmox_url      = var.proxmox_url
+#  proxmox_user     = var.proxmox_user
+#  proxmox_password = var.proxmox_password
+#}

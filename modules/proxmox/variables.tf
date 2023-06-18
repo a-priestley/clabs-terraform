@@ -12,8 +12,3 @@ variable "proxmox_password" {
   description = "Password for the Proxmox user"
   type        = string
 }
-
-#variable "proxmox_node" {
-#  description = "Node name in the Proxmox cluster"
-#  type        = string
-#}

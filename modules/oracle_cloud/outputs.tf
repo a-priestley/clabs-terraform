@@ -1,3 +1,7 @@
+output "all-availability-domains-in-your-tenancy" {
+  value = data.oci_identity_availability_domains.ads
+}
+
 #output "vcn_id" {
 #  description = "OCID of the VCN that is created"
 #  value = module.vcn.vcn_id
