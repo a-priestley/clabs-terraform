@@ -30,3 +30,6 @@ terraform.rc
 
 # Ignore backend configuration files
 backend.hcl
+
+# Ignore acquired kubeconfig files
+kubeconfig.yaml
