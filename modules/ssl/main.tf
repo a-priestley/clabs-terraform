@@ -126,3 +126,132 @@ resource "kustomization_resource" "certificate" {
   })
   depends_on = [module.cert_manager]
 }
+
+resource "kustomization_resource" "certificate_reader" {
+  provider = kustomization.local
+  manifest = jsonencode({
+    apiVersion = "v1"
+    kind       = "ServiceAccount"
+    metadata = {
+      name      = "certificate-reader-service-account"
+      namespace = "cert-manager"
+    }
+  })
+}
+
+resource "kustomization_resource" "certificate_reader_role" {
+  provider = kustomization.local
+  manifest = jsonencode({
+    apiVersion = "rbac.authorization.k8s.io/v1"
+    kind       = "Role"
+    metadata = {
+      name      = "certificate-reader"
+      namespace = "cert-manager"
+    }
+    rules = [
+      {
+        apiGroups     = [""]
+        resources     = ["secrets"]
+        resourceNames = ["${data.cloudflare_zone.zone.name}-tls"]
+        verbs         = ["get"]
+      }
+    ]
+  })
+}
+
+resource "kustomization_resource" "certificate_reader_role_binding" {
+  provider = kustomization.local
+  manifest = jsonencode({
+    apiVersion = "rbac.authorization.k8s.io/v1"
+    kind       = "RoleBinding"
+    metadata = {
+      name      = "read-certificate-secrets"
+      namespace = "cert-manager"
+    }
+    subjects = [
+      {
+        kind      = "ServiceAccount"
+        name      = "certificate-reader-service-account"
+        namespace = "default"
+      }
+    ]
+    roleRef = {
+      kind     = "Role"
+      name     = "certificate-reader"
+      apiGroup = "rbac.authorization.k8s.io"
+    }
+  })
+}
+
+#resource "kustomization_resource" "import_load_balancer_cert_cronjob" {
+#  provider = kustomization.local
+#  manifest = jsonencode({
+#    apiVersion = "batch/v1"
+#    kind       = "CronJob"
+#    metadata = {
+#      name      = "import-load-balancer-cert"
+#      namespace = "default"
+#    }
+#    spec = {
+#      serviceAccountName = "certificate-reader-service-account"
+#      schedule           = "* * * * *"
+#      jobTemplate = {
+#        spec = {
+#          template = {
+#            spec = {
+#              containers = [
+#                {
+#                  name            = "import-load-balancer-cert"
+#                  image           = "ghcr.io/oracle/oci-cli:latest"
+#                  imagePullPolicy = "IfNotPresent"
+#                  command         = ["/bin/sh", "-c"]
+#                  args = [<<-EOF
+#                    TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+#                    NAMESPACE="cert-manager"
+#                    SECRET_OUTPUT=$(curl -sSk -H "Authorization: Bearer $TOKEN" https://kubernetes.default.svc/api/v1/namespaces/$NAMESPACE/secrets/$SECRET_NAME)
+#                    echo "Secret output: $SECRET_OUTPUT"
+#                    echo "$SECRET_OUTPUT" | jq -r '.data."tls.crt"' | base64 -d > /tmp/cert.pem
+#                    echo "$SECRET_OUTPUT" | jq -r '.data."tls.key"' | base64 -d > /tmp/key.pem
+#                    oci lb certificate create --certificate-name test-cert --public-certificate-file /tmp/cert.pem --private-key-file /tmp/key.pem --load-balancer-id $LOAD_BALANCER_ID
+#                  EOF
+#                  ]
+#                  env = [
+#                    {
+#                      name  = "OCI_CLI_AUTH",
+#                      value = "instance_principal"
+#                    },
+#                    {
+#                      name  = "SECRET_NAME",
+#                      value = "${data.cloudflare_zone.zone.name}-tls"
+#                    },
+#                    {
+#                      name  = "LOAD_BALANCER_ID",
+#                      value = var.load_balancer_id
+#                    }
+#                  ]
+#                }
+#              ]
+#              restartPolicy = "OnFailure"
+#            }
+#          }
+#        }
+#      }
+#    }
+#  })
+#}
+
+#resource "kustomization_resource" "oci_config_secret" {
+#  provider = kustomization.local
+#  manifest = jsonencode({
+#    apiVersion = "v1"
+#    kind       = "Secret"
+#    metadata = {
+#      name      = "oci-config"
+#      namespace = "default"
+#    }
+#    type = "Opaque"
+#    data = {
+#      config = filebase64("${
+#    }
+#  })
+#}

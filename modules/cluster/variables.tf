@@ -27,3 +27,7 @@ variable "load_balancer_id" {
   description = "The ID of the load balancer"
   type        = string
 }
+
+variable "tenancy_id" {
+  type = string
+}

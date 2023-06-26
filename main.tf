@@ -17,13 +17,17 @@ module "cluster" {
   vcn_id                  = module.networking.vcn_id
   compartment_id          = module.networking.compartment_id
   load_balancer_id        = module.networking.load_balancer_id
+  tenancy_id              = var.oci_tenancy_ocid
   oci_ssh_public_key_path = var.oci_ssh_public_key_path
 }
 
 module "ssl" {
-  source               = "./modules/ssl"
-  letsencrypt_email    = var.email
-  cloudflare_api_token = var.cloudflare_api_token
-  cloudflare_zone_id   = var.cloudflare_zone_id
-  kube_config          = module.cluster.kube_config
+  source                       = "./modules/ssl"
+  letsencrypt_email            = var.email
+  cloudflare_api_token         = var.cloudflare_api_token
+  cloudflare_zone_id           = var.cloudflare_zone_id
+  kube_config                  = module.cluster.kube_config
+  load_balancer_id             = module.networking.load_balancer_id
+  load_balancer_listener_id    = module.cluster.load_balancer_listener_id
+  load_balancer_backend_set_id = module.cluster.load_balancer_backend_set_id
 }

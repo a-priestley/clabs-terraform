@@ -106,3 +106,18 @@ resource "oci_load_balancer_listener" "load_balancer_listener" {
 data "oci_containerengine_cluster_kube_config" "kube_config" {
   cluster_id = oci_containerengine_cluster.oke_cluster.id
 }
+
+resource "oci_identity_dynamic_group" "identity_dynamic_group" {
+  compartment_id = var.tenancy_id
+  description    = "Instance Principal"
+  name           = "load-balancer-dynamic-group"
+  matching_rule  = "instance.compartment.id = '${var.compartment_id}'"
+}
+
+resource "oci_identity_policy" "example_policy" {
+  compartment_id = var.compartment_id
+  description    = "Created by Terraform"
+  name           = "load-balancer-certificate-policy"
+  statements     = ["Allow dynamic-group load-balancer-dynamic-group to manage load-balancers in compartment id ${var.compartment_id}"]
+}
+
