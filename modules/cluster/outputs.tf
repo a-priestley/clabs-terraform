@@ -1,3 +1,3 @@
-#output "kube_config_path" {
-#  value = local_sensitive_file.kubeconfig.filename
-#}
+output "kube_config" {
+  value = data.oci_containerengine_cluster_kube_config.kube_config.content
+}

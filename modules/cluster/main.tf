@@ -106,7 +106,3 @@ resource "oci_load_balancer_listener" "load_balancer_listener" {
 data "oci_containerengine_cluster_kube_config" "kube_config" {
   cluster_id = oci_containerengine_cluster.oke_cluster.id
 }
-
-output "kube_config" {
-  value = data.oci_containerengine_cluster_kube_config.kube_config.content
-}
