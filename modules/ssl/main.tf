@@ -127,7 +127,7 @@ resource "kustomization_resource" "certificate" {
   depends_on = [module.cert_manager]
 }
 
-resource "kustomization_resource" "certificate_reader" {
+resource "kustomization_resource" "certificate_reader_service_account" {
   provider = kustomization.local
   manifest = jsonencode({
     apiVersion = "v1"
@@ -145,7 +145,7 @@ resource "kustomization_resource" "certificate_reader_role" {
     apiVersion = "rbac.authorization.k8s.io/v1"
     kind       = "Role"
     metadata = {
-      name      = "certificate-reader"
+      name      = "certificate-reader-role"
       namespace = "cert-manager"
     }
     rules = [
@@ -172,12 +172,12 @@ resource "kustomization_resource" "certificate_reader_role_binding" {
       {
         kind      = "ServiceAccount"
         name      = "certificate-reader-service-account"
-        namespace = "default"
+        namespace = "cert-manager"
       }
     ]
     roleRef = {
       kind     = "Role"
-      name     = "certificate-reader"
+      name     = "certificate-reader-role"
       apiGroup = "rbac.authorization.k8s.io"
     }
   })
@@ -190,15 +190,15 @@ resource "kustomization_resource" "certificate_reader_role_binding" {
 #    kind       = "CronJob"
 #    metadata = {
 #      name      = "import-load-balancer-cert"
-#      namespace = "default"
+#      namespace = "cert-manager"
 #    }
 #    spec = {
-#      serviceAccountName = "certificate-reader-service-account"
-#      schedule           = "* * * * *"
+#      schedule = "0 0 * * *"
 #      jobTemplate = {
 #        spec = {
 #          template = {
 #            spec = {
+#              serviceAccountName = "certificate-reader-service-account"
 #              containers = [
 #                {
 #                  name            = "import-load-balancer-cert"
@@ -207,12 +207,22 @@ resource "kustomization_resource" "certificate_reader_role_binding" {
 #                  command         = ["/bin/sh", "-c"]
 #                  args = [<<-EOF
 #                    TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
-#                    NAMESPACE="cert-manager"
-#                    SECRET_OUTPUT=$(curl -sSk -H "Authorization: Bearer $TOKEN" https://kubernetes.default.svc/api/v1/namespaces/$NAMESPACE/secrets/$SECRET_NAME)
-#                    echo "Secret output: $SECRET_OUTPUT"
-#                    echo "$SECRET_OUTPUT" | jq -r '.data."tls.crt"' | base64 -d > /tmp/cert.pem
-#                    echo "$SECRET_OUTPUT" | jq -r '.data."tls.key"' | base64 -d > /tmp/key.pem
-#                    oci lb certificate create --certificate-name test-cert --public-certificate-file /tmp/cert.pem --private-key-file /tmp/key.pem --load-balancer-id $LOAD_BALANCER_ID
+#                    NAMESPACE=$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)
+#                    SECRET=$(curl -sSk -H "Authorization: Bearer $TOKEN" https://kubernetes.default.svc/api/v1/namespaces/$NAMESPACE/secrets/$SECRET_NAME)
+#                    NEW_CERTIFICATE=$(echo "$SECRET" | jq -r '.data."tls.crt"' | base64 -d)
+#                    CURRENT_CERTIFICATES=$(oci lb certificate list --load-balancer-id $LOAD_BALANCER_ID --all)
+#                    LATEST_CERTIFICATE=$(echo $CURRENT_CERTIFICATES | jq -r '.data | sort_by(."certificate-name") | last."public-certificate"')
+#                    if [ "$LATEST_CERTIFICATE" != "$NEW_CERTIFICATE" ]; then
+#                        CERTIFICATE_NAME=$(date +%s)
+#                        echo "$SECRET" | jq -r '.data."tls.key"' | base64 -d > /tmp/key.pem
+#                        echo "$NEW_CERTIFICATE" > /tmp/cert.pem
+#                        oci lb certificate create --certificate-name $CERTIFICATE_NAME --public-certificate-file /tmp/cert.pem --private-key-file /tmp/key.pem --load-balancer-id $LOAD_BALANCER_ID --wait-for-state SUCCEEDED
+#                        oci lb listener update --load-balancer-id $LOAD_BALANCER_ID --default-backend-set-name load-balancer-backend-set --port 443 --protocol HTTP2 --listener-name load-balancer-listener --ssl-certificate-name $CERTIFICATE_NAME --cipher-suite-name oci-default-http2-ssl-cipher-suite-v1 --force
+#                        OLD_CERTS=$(echo $CURRENT_CERTIFICATES | jq -r ".data[] | select(.\"certificate-name\" != \"$CERTIFICATE_NAME\") | .\"certificate-name\"")
+#                        for cert in $OLD_CERTS; do 
+#                            oci lb certificate delete --load-balancer-id $LOAD_BALANCER_ID --certificate-name $cert --force; 
+#                        done
+#                    fi  
 #                  EOF
 #                  ]
 #                  env = [
@@ -238,20 +248,8 @@ resource "kustomization_resource" "certificate_reader_role_binding" {
 #      }
 #    }
 #  })
-#}
-
-#resource "kustomization_resource" "oci_config_secret" {
-#  provider = kustomization.local
-#  manifest = jsonencode({
-#    apiVersion = "v1"
-#    kind       = "Secret"
-#    metadata = {
-#      name      = "oci-config"
-#      namespace = "default"
-#    }
-#    type = "Opaque"
-#    data = {
-#      config = filebase64("${
-#    }
-#  })
+#  depends_on = [
+#    kustomization_resource.certificate_reader_role,
+#    kustomization_resource.certificate_reader_role_binding
+#  ]
 #}

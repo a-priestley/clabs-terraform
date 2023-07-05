@@ -17,15 +17,3 @@ variable "cloudflare_zone_id" {
 variable "kube_config" {
   type = string
 }
-
-variable "load_balancer_id" {
-  type = string
-}
-
-variable "load_balancer_listener_id" {
-  type = string
-}
-
-variable "load_balancer_backend_set_id" {
-  type = string
-}

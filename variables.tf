@@ -44,7 +44,31 @@ variable "oci_region" {
   type        = string
 }
 
+variable "oci_oke_image_id" {
+  type = string
+}
+
 variable "email" {
   description = "General purpose email address for alerts"
   type        = string
+}
+
+variable "wireguard_port" {
+  type = number
+}
+
+variable "wireguard_peers" {
+  type = string
+}
+
+variable "wireguard_keepalive_peers" {
+  type = string
+}
+
+variable "wireguard_site2site_peer" {
+  type = string
+}
+
+variable "wireguard_site2site_allowedips" {
+  type = string
 }

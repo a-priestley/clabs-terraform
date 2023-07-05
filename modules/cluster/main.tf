@@ -58,7 +58,7 @@ resource "oci_containerengine_node_pool" "oke_node_pool" {
     ocpus         = 1
   }
   node_source_details {
-    image_id    = "ocid1.image.oc1.ca-montreal-1.aaaaaaaaxowisy372o5y5bsrtkiaslxuezsuoh2dc3avn6sq2fikyan623qq"
+    image_id    = var.oci_oke_image_id
     source_type = "image"
   }
   initial_node_labels {
@@ -68,56 +68,6 @@ resource "oci_containerengine_node_pool" "oke_node_pool" {
   ssh_public_key = file(var.oci_ssh_public_key_path)
 }
 
-resource "oci_load_balancer_backend_set" "load_balancer_backend_set" {
-  load_balancer_id = var.load_balancer_id
-  name             = "load-balancer-backend-set"
-  policy           = "ROUND_ROBIN"
-  health_checker {
-    interval_ms         = 30000
-    port                = 8080
-    protocol            = "HTTP"
-    response_body_regex = ".*"
-    url_path            = "/"
-  }
-}
-
-resource "oci_load_balancer_backend" "load_balancer_backend_1" {
-  load_balancer_id = var.load_balancer_id
-  backendset_name  = oci_load_balancer_backend_set.load_balancer_backend_set.name
-  ip_address       = oci_containerengine_node_pool.oke_node_pool.nodes[0].private_ip
-  port             = 8080
-}
-
-resource "oci_load_balancer_backend" "load_balancer_backend_2" {
-  load_balancer_id = var.load_balancer_id
-  backendset_name  = oci_load_balancer_backend_set.load_balancer_backend_set.name
-  ip_address       = oci_containerengine_node_pool.oke_node_pool.nodes[1].private_ip
-  port             = 8080
-}
-
-resource "oci_load_balancer_listener" "load_balancer_listener" {
-  load_balancer_id         = var.load_balancer_id
-  name                     = "load-balancer-listener"
-  default_backend_set_name = oci_load_balancer_backend_set.load_balancer_backend_set.name
-  port                     = 22
-  protocol                 = "TCP"
-}
-
 data "oci_containerengine_cluster_kube_config" "kube_config" {
   cluster_id = oci_containerengine_cluster.oke_cluster.id
 }
-
-resource "oci_identity_dynamic_group" "identity_dynamic_group" {
-  compartment_id = var.tenancy_id
-  description    = "Instance Principal"
-  name           = "load-balancer-dynamic-group"
-  matching_rule  = "instance.compartment.id = '${var.compartment_id}'"
-}
-
-resource "oci_identity_policy" "example_policy" {
-  compartment_id = var.compartment_id
-  description    = "Created by Terraform"
-  name           = "load-balancer-certificate-policy"
-  statements     = ["Allow dynamic-group load-balancer-dynamic-group to manage load-balancers in compartment id ${var.compartment_id}"]
-}
-

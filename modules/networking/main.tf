@@ -11,7 +11,7 @@ provider "oci" {
   #fingerprint      = var.oci_fingerprint
   #private_key_path = var.oci_private_key_path
   #tenancy_ocid     = var.oci_tenancy_ocid
-  region              = var.oci_region
+  region = var.oci_region
   #auth                = "SecurityToken"
   #config_file_profile = "DEFAULT"
 }
@@ -19,7 +19,7 @@ provider "oci" {
 resource "oci_identity_compartment" "identity_compartment" {
   compartment_id = var.oci_tenancy_ocid
   description    = "Compartment for Terraform resources."
-  name           = "${var.project_name}"
+  name           = var.project_name
 }
 
 module "vcn" {
@@ -42,6 +42,7 @@ resource "oci_core_security_list" "private_subnet_sl" {
   vcn_id         = module.vcn.vcn_id
 
   display_name = "Private Subnet Security List"
+
   egress_security_rules {
     stateless        = false
     destination      = "0.0.0.0/0"
@@ -54,6 +55,39 @@ resource "oci_core_security_list" "private_subnet_sl" {
     source      = "10.0.0.0/16"
     source_type = "CIDR_BLOCK"
     protocol    = "all"
+  }
+
+  ingress_security_rules {
+    stateless   = false
+    source      = "10.0.0.0/24"
+    source_type = "CIDR_BLOCK"
+    protocol    = "6"
+    tcp_options {
+      min = 10256
+      max = 10256
+    }
+  }
+
+  ingress_security_rules {
+    stateless   = false
+    source      = "10.0.0.0/24"
+    source_type = "CIDR_BLOCK"
+    protocol    = "6"
+    tcp_options {
+      min = 31600
+      max = 31600
+    }
+  }
+
+  ingress_security_rules {
+    stateless   = false
+    source      = "10.0.0.0/24"
+    source_type = "CIDR_BLOCK"
+    protocol    = "17"
+    udp_options {
+      min = 31601
+      max = 31601
+    }
   }
 }
 
@@ -68,6 +102,61 @@ resource "oci_core_security_list" "public_subnet_sl" {
     destination      = "0.0.0.0/0"
     destination_type = "CIDR_BLOCK"
     protocol         = "all"
+  }
+
+  egress_security_rules {
+    stateless        = false
+    destination      = "10.0.1.0/24"
+    destination_type = "CIDR_BLOCK"
+    protocol         = "6"
+    tcp_options {
+      min = 31600
+      max = 31600
+    }
+  }
+
+  egress_security_rules {
+    stateless        = false
+    destination      = "10.0.1.0/24"
+    destination_type = "CIDR_BLOCK"
+    protocol         = "17"
+    udp_options {
+      min = 31601
+      max = 31601
+    }
+  }
+
+  egress_security_rules {
+    stateless        = false
+    destination      = "10.0.1.0/24"
+    destination_type = "CIDR_BLOCK"
+    protocol         = "6"
+    tcp_options {
+      min = 10256
+      max = 10256
+    }
+  }
+
+  ingress_security_rules {
+    stateless   = false
+    source      = "0.0.0.0/0"
+    source_type = "CIDR_BLOCK"
+    protocol    = "6"
+    tcp_options {
+      min = 80
+      max = 80
+    }
+  }
+
+  ingress_security_rules {
+    stateless   = false
+    source      = "0.0.0.0/0"
+    source_type = "CIDR_BLOCK"
+    protocol    = "17"
+    udp_options {
+      min = 51820
+      max = 51820
+    }
   }
 
   ingress_security_rules {
@@ -110,20 +199,3 @@ resource "oci_core_subnet" "private_subnet" {
   route_table_id             = module.vcn.nat_route_id
   security_list_ids          = [oci_core_security_list.private_subnet_sl.id]
 }
-
-resource "oci_load_balancer_load_balancer" "load_balancer" {
-  shape          = "flexible"
-  compartment_id = oci_identity_compartment.identity_compartment.id
-  display_name   = "Load Balancer"
-  is_private     = false
-
-  subnet_ids = [
-    oci_core_subnet.public_subnet.id
-  ]
-
-  shape_details {
-    maximum_bandwidth_in_mbps = 10
-    minimum_bandwidth_in_mbps = 10
-  }
-}
-

@@ -23,11 +23,6 @@ variable "oci_ssh_public_key_path" {
   type        = string
 }
 
-variable "load_balancer_id" {
-  description = "The ID of the load balancer"
-  type        = string
-}
-
-variable "tenancy_id" {
+variable "oci_oke_image_id" {
   type = string
 }

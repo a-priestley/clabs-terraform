@@ -14,6 +14,6 @@ output "compartment_id" {
   value = oci_identity_compartment.identity_compartment.id
 }
 
-output "load_balancer_id" {
-  value = oci_load_balancer_load_balancer.load_balancer.id
-}
+#output "load_balancer_id" {
+#  value = oci_load_balancer_load_balancer.load_balancer.id
+#}
