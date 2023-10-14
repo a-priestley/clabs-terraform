@@ -26,6 +26,7 @@ module "ssl" {
   cloudflare_api_token = var.cloudflare_api_token
   cloudflare_zone_id   = var.cloudflare_zone_id
   kube_config          = module.cluster.kube_config
+  compartment_id       = module.networking.compartment_id
 }
 
 module "wireguard" {
@@ -37,6 +38,22 @@ module "wireguard" {
   wireguard_port                 = var.wireguard_port
   wireguard_peers                = var.wireguard_peers
   wireguard_keepalive_peers      = var.wireguard_keepalive_peers
-  wireguard_site2site_peer       = var.wireguard_site2site_peer
+  wireguard_site2site            = var.wireguard_site2site
+  wireguard_site2site_peers      = var.wireguard_site2site_peers
   wireguard_site2site_allowedips = var.wireguard_site2site_allowedips
 }
+
+module "headscale" {
+  source               = "./modules/headscale"
+  kube_config          = module.cluster.kube_config
+  compartment_id       = module.networking.compartment_id
+  cloudflare_api_token = var.cloudflare_api_token
+  cloudflare_zone_id   = var.cloudflare_zone_id
+}
+
+#module "infra" {
+#  source              = "./modules/infra"
+#  pm_api_url          = var.pm_api_url
+#  pm_api_token_id     = var.pm_api_token_id
+#  pm_api_token_secret = var.pm_api_token_secret
+#}

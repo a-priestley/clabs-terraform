@@ -17,3 +17,7 @@ variable "cloudflare_zone_id" {
 variable "kube_config" {
   type = string
 }
+
+variable "compartment_id" {
+  type = string
+}

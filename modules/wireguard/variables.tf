@@ -25,8 +25,15 @@ variable "wireguard_keepalive_peers" {
   type = string
 }
 
-variable "wireguard_site2site_peer" {
-  type = string
+variable "wireguard_site2site" {
+  type = list(object({
+    peer = string
+    ips = string
+  }))
+}
+
+variable "wireguard_site2site_peers" {
+  type = list(string)
 }
 variable "wireguard_site2site_allowedips" {
   type = string

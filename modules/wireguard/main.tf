@@ -56,13 +56,18 @@ resource "kubernetes_persistent_volume_claim" "wireguard_pvc" {
   }
 }
 
+locals {
+  site2site_map = {
+    for obj in var.wireguard_site2site : "SERVER_ALLOWEDIPS_PEER_${obj.peer}" => obj.ips
+  }
+}
+
 resource "kubernetes_config_map" "wireguard_config_map" {
   metadata {
     name      = "wireguard-config"
     namespace = kubernetes_namespace.wireguard_namespace.id
   }
-  data = {
-
+  data = merge({
     PUID                                                     = "1000"
     PGID                                                     = "1000"
     TZ                                                       = "Etc/UTC"
@@ -74,8 +79,7 @@ resource "kubernetes_config_map" "wireguard_config_map" {
     ALLOWEDIPS                                               = "0.0.0.0/0"
     PERSISTENTKEEPALIVE_PEERS                                = "${var.wireguard_keepalive_peers}"
     LOG_CONFS                                                = "true"
-    "SERVER_ALLOWEDIPS_PEER_${var.wireguard_site2site_peer}" = "${var.wireguard_site2site_allowedips}"
-  }
+  }, local.site2site_map)
 }
 
 resource "kubernetes_deployment" "wireguard_deployment" {

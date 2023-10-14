@@ -12,7 +12,7 @@ data "oci_identity_availability_domains" "ads" {
 
 resource "oci_containerengine_cluster" "oke_cluster" {
   compartment_id     = var.compartment_id
-  kubernetes_version = "v1.26.2"
+  kubernetes_version = "v1.27.2"
   name               = "K8s Cluster"
   vcn_id             = var.vcn_id
   endpoint_config {
@@ -35,7 +35,7 @@ resource "oci_containerengine_cluster" "oke_cluster" {
 resource "oci_containerengine_node_pool" "oke_node_pool" {
   cluster_id         = oci_containerengine_cluster.oke_cluster.id
   compartment_id     = var.compartment_id
-  kubernetes_version = "v1.26.2"
+  kubernetes_version = "v1.27.2"
   name               = "K8s Node Pool"
   node_config_details {
     placement_configs {
@@ -67,6 +67,11 @@ resource "oci_containerengine_node_pool" "oke_node_pool" {
   }
   ssh_public_key = file(var.oci_ssh_public_key_path)
 }
+
+#resource "oci_file_storage_file_system" "oke_file_system" {
+#  availability_domain = data.oci_identity_availability_domains.ads.availability_domains[0].name
+#  compartment_id      = var.compartment_id
+#}
 
 data "oci_containerengine_cluster_kube_config" "kube_config" {
   cluster_id = oci_containerengine_cluster.oke_cluster.id

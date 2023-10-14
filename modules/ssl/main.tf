@@ -6,6 +6,9 @@ terraform {
     kustomization = {
       source = "kbst/kustomization"
     }
+    oci = {
+      source = "oracle/oci"
+    }
   }
 }
 
@@ -18,6 +21,19 @@ provider "kustomization" {
   alias           = "local"
   kubeconfig_path = local_sensitive_file.kube_config.filename
 }
+
+provider "kubernetes" {
+  config_path = local_sensitive_file.kube_config.filename
+}
+
+#resource "oci_core_public_ip" "traefik_public_ip" {
+#  compartment_id = var.compartment_id
+#  lifetime       = "RESERVED"
+#
+#  lifecycle {
+#    ignore_changes = [private_ip_id]
+#  }
+#}
 
 resource "kustomization_resource" "cloudflare_api_token_secret" {
   provider = kustomization.local
@@ -182,6 +198,34 @@ resource "kustomization_resource" "certificate_reader_role_binding" {
     }
   })
 }
+
+
+#resource "kubernetes_namespace" "traefik_namespace" {
+#  metadata {
+#    name = "traefik"
+#  }
+#}
+
+provider "helm" {
+  kubernetes {
+    config_path = "${path.module}/kubeconfig.yaml"
+  }
+}
+
+#resource "helm_release" "traefik" {
+#  name = "traefik-release"
+#  repository = "https://helm.traefik.io/traefik"
+#  chart = "traefik"
+#
+#  values = [
+#    "${file("${path.module}/traefik.yaml")}"
+#  ]
+#
+#  set {
+#    name = "service.spec.loadBalancerIP"
+#    value = oci_core_public_ip.traefik_public_ip.ip_address
+#  }
+#}
 
 #resource "kustomization_resource" "import_load_balancer_cert_cronjob" {
 #  provider = kustomization.local
